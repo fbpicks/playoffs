@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Fantasy Football Playoffs</title>
+        <link rel="shortcut icon" href="https://dl.dropboxusercontent.com/s/d8kuo01repoyfif/favicon.ico?raw=1" />
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js"></script>
+		<meta charset="utf-8"/>
+</head>
+
+<script>
+window.onload = function()
+{ 
+	op1 = GetData1(player_list, 7, GetData2);
+}
+
+var player_list = 'https://www.dropbox.com/scl/fi/a1zbppnhobvpedseotrv2/players.csv?rlkey=6156w2svj196b30iqztgq42jy&dl=0&raw=1';
+dl.dropboxusercontent.com
+'https://dl.dropboxusercontent.com/scl/fi/a1zbppnhobvpedseotrv2/players.csv?rlkey=6156w2svj196b30iqztgq42jy&dl=0&raw=1';
+var rosters = 'https://www.dropbox.com/scl/fi/rwcxubttyzoyji13uys9a/PlayoffRoster.csv?rlkey=deygvsszbpa6kve3lqwyjcp9g&dl=0&raw=1';
+var op1 = {};
+var op2 = {};
+
+function GetData(link, nCol)
+{
+	var op = {};
+	console.log(1);
+	$.get(link, function(data)
+	{
+        m = data;
+		m = m.replace(/\r/g, ",");
+		m = m.replace('\n', "");
+		m = m.split(',');
+		
+		for (var i = 0; i < nCol; i++)
+		{
+			op[m[i]] = [];
+		}
+		
+		for (var i = nCol; i < m.length; i++)
+		{
+			op[m[i%nCol]].push(m[i].trim());
+		}
+	});
+	return(op);
+}
+
+function GetData1(link, nCol, myCallback)
+{
+	op1 = GetData(link, nCol);
+	myCallback(rosters, 4);
+}
+
+function GetData2(link, nCol)//, myCallback)
+{
+	op2 = GetData(link, nCol);
+	return
+	//myCallback(rosters, 4);
+}
+
+
+</script>
+
+<body>
+</body>
+
+</html>
