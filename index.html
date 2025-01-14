@@ -19,6 +19,7 @@ var rosters = 'https://dl.dropboxusercontent.com/scl/fi/rwcxubttyzoyji13uys9a/Pl
 var res = [];
 var standings = [];
 var originalTable;
+var teamTableText;
 
 function GetData(link, nCol)
 {
@@ -55,6 +56,9 @@ function GetTeamTotals()
 	var op1 = res[0];
 	var op2 = res[1];
 	var team_names = [...new Set(op2.Team)];
+	var rank = 1;
+	var tc = 1;
+	var this_rank = 1;
 
 	for (i = 0; i < team_names.length; i++)
 	{
@@ -93,44 +97,57 @@ function GetTeamTotals()
 	standings = standings.sort((a, b) => b.Total - a.Total);
 	
 	// show standings
-	$('#main_table').append('<table>');
+	var tableText = '<table class="styled-table">';
 	
 	// headings
-	$('#main_table').append('<tr>');
+	tableText += '<thead><tr>';
 	var table_headings = Object.keys(standings[0]);
-	$('#main_table').append('<th>Rank</th>');
+	tableText += '<th>Rank</th>';
 	for (var i  = 0; i < table_headings.length; i++)
 	{
-		$('#main_table').append('<th>' +table_headings[i] +'</th>');
+		tableText += '<th>' +table_headings[i] +'</th>';
 	}
-	$('#main_table').append('</tr>');
+	tableText += '</tr></thead><tbody>';
 	
 	// standings
 	for (var i = 0; i < standings.length; i++)
 	{
-		$('#main_table').append('<tr>');
-		$('#main_table').append('<td>' + (i+1) + '</td>');
+		tableText += '<tr>';
+		if (i !== 0)
+		{
+			if (standings[i].Total !== standings[i-1].Total)
+			{
+				this_rank += tc;
+				tc = 1; 
+			}
+			else
+			{
+				tc++;
+			}
+		}
+		tableText += '<td>' + this_rank + '</td>';
 		for (var j = 0; j < table_headings.length; j++)
 		{	
 			var this_val = standings[i][table_headings[j]];
 			if(table_headings[j] === 'Total')
 			{
-				$('#main_table').append('<td><b>' + this_val +'</b></td>');
+				tableText += '<td><b>' + this_val +'</b></td>';
 			}
 			else if (table_headings[j] === 'Team')
 			{
 				var toInsert = "'" + this_val + "'";
 				var this_link = '<span class="link" onclick="showTeam(' + toInsert + ');">' + this_val +'</span>';
-				$('#main_table').append('<td>' + this_link +'</a></td>');
+				tableText += '<td>' + this_link +'</a></td>';
 			}
 			else 
 			{
-				$('#main_table').append('<td>' + this_val +'</td>');
+				tableText += '<td>' + this_val +'</td>';
 			}
 		}
-		$('#main_table').append('</tr>');
-		$('#main_table').append('</table>');
+		tableText += '</tr>';
 	}
+	tableText += '</tbody></table>';
+	$('#main_table').append(tableText);
 }
 
 function showTeam(this_team)
@@ -147,23 +164,23 @@ function showTeam(this_team)
 	
 	// show team table
 	$('#team_table').replaceWith(originalTable.clone());
-	$('#team_table').append('<table>');
-	$('#team_table').append('<tr>');
-	$('#team_table').append('<th>Team: ' +  this_team + '</th>');
+	teamTableText = '<table class="styled-table">';
+	teamTableText += '<tr>';
+	teamTableText += '<th>Team: ' +  this_team + '</th>';
 	var this_link = '<span class="link" onclick="showMainTable();">Back to Standings</span>';
-	$('#team_table').append('<td>' + this_link +'</a></td>');
-	$('#team_table').append('</tr>');
+	teamTableText += '<td>' + this_link +'</a></td>';
+	teamTableText += '</tr>';
 	// headings
-	$('#team_table').append('<tr>');
+	teamTableText += '<thead><tr>';
 	var table_headings = Object.keys(res[0]);
 	for (var i  = 0; i < table_headings.length; i++)
 	{
 		if (table_headings[i] !== 'Eliminated'){
-			$('#team_table').append('<th>' +table_headings[i] +'</th>');
+			teamTableText += '<th>' +table_headings[i] +'</th>';
 		}
 	}
-	$('#team_table').append('<th>' + 'Total' +'</th>');
-	$('#team_table').append('</tr>');
+	teamTableText += '<th>' + 'Total' +'</th>';
+	teamTableText += '</thead></tr>';
 	
 	
 	for (j = 0; j < team_roster.length; j++)
@@ -181,46 +198,47 @@ function showTeam(this_team)
 		if (eliminated === 1)  var xtra = ' bgcolor="#FFB2B2"';
 		else var xtra = ' bgcolor="#b3ffb3"';
 		
-		$('#team_table').append('<tr>');
+		teamTableText += '<tr>';
 		
 		for (var i  = 0; i < table_headings.length; i++)
 		{
 			if (table_headings[i] !== 'Eliminated'){
-				$('#team_table').append('<td' + xtra + '>' + op1[table_headings[i]][op1.Player.indexOf(this_player)] +'</td>');
+				teamTableText += '<td' + xtra + '>' + op1[table_headings[i]][op1.Player.indexOf(this_player)] +'</td>';
 			}
 		}
-		$('#team_table').append('<td' + xtra + '>' + player_totals[j] +'</td>');
-		$('#team_table').append('</tr>');
+		teamTableText += '<td' + xtra + '>' + player_totals[j] +'</td>';
+		teamTableText += '</tr>';
 	}
 	
-	$('#team_table').append('<tr>');
+	teamTableText += '<tr>';
 	for (var i  = 0; i < table_headings.length - 1; i++)
 	{
 		if (table_headings[i] === 'WC')
 		{
-			$('#team_table').append('<th>' + wc.reduce((a, b) => a + b, 0) +'</th>');
+			teamTableText += '<th>' + wc.reduce((a, b) => a + b, 0) +'</th>';
 		}
 		else if (table_headings[i] === 'D')
 		{
-			$('#team_table').append('<th>' + d.reduce((a, b) => a + b, 0) +'</th>');
+			teamTableText += '<th>' + d.reduce((a, b) => a + b, 0) +'</th>';
 		}
 		else if (table_headings[i] === 'CC')
 		{
-			$('#team_table').append('<th>' + cc.reduce((a, b) => a + b, 0) +'</th>');
+			teamTableText += '<th>' + cc.reduce((a, b) => a + b, 0) +'</th>';
 		}
 		else if (table_headings[i] === 'SB')
 		{
-			$('#team_table').append('<th>' + sb.reduce((a, b) => a + b, 0) +'</th>');
+			teamTableText += '<th>' + sb.reduce((a, b) => a + b, 0) +'</th>';
 		}
 		else if (table_headings[i] === 'Position')
 		{
-			$('#team_table').append('<td>' + this_link +'</a></td>');
+			teamTableText += '<td>' + this_link +'</a></td>';
 		}
-		else $('#team_table').append('<td> </td>');
+		else teamTableText += '<td> </td>';
 	}
-	$('#team_table').append('<th>' + player_totals.reduce((a, b) => a + b, 0) +'</th>');
-	$('#team_table').append('</tr>');
-	$('#team_table').append('</table>');
+	teamTableText += '<th>' + player_totals.reduce((a, b) => a + b, 0) +'</th>';
+	teamTableText += '</tr>';
+	teamTableText += '</tbody></table>';
+	$('#team_table').append(teamTableText);
 	
 	$('#main_table').hide();
 	$('#team_table').show();
@@ -235,29 +253,40 @@ function showMainTable()
 </script>
 
 <style>
-th {
-text-align:center;
-font-size: 18px;
-padding: 4px;
-border: 0px solid #000;
- white-space: nowrap;
-  overflow: hidden;
-}
-
-td {
-text-align:center;
-font-size: 16px;
-padding: 4px;
-border: 0px solid #000;
- white-space: nowrap;
-  overflow: hidden;
-}
-
-table {
-    width: 100%;
+.styled-table {
     border-collapse: collapse;
-    border-spacing: 0;
+    margin: 20px 0;
+    font-size: 0.9em;
+    font-family: sans-serif;
+    min-width: 400px;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.15);
 }
+
+.styled-table thead tr {
+    background-color: #00338D;
+    color: #ffffff;
+    text-align: center;
+}
+
+.styled-table th,
+.styled-table td {
+    padding: 12px 15px;
+    text-align: center;
+}
+
+
+.styled-table tbody tr {
+    border-bottom: 1px solid #dddddd;
+}
+
+.styled-table tbody tr:nth-of-type(even) {
+    background-color: #f3f3f3;
+}
+
+.styled-table tbody tr:last-of-type {
+    border-bottom: 2px solid #00338D;
+}
+
 
 #loading{
 	text-align: center;
