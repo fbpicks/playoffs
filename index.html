@@ -10,27 +10,26 @@
 <script>
 window.onload = function()
 { 
-	op1 = GetData1(player_list, 7, GetData2);
+	originalTable = $('#team_table').clone();
+	GetData(player_list, 8);
 }
 
-var player_list = 'https://www.dropbox.com/scl/fi/a1zbppnhobvpedseotrv2/players.csv?rlkey=6156w2svj196b30iqztgq42jy&dl=0&raw=1';
-dl.dropboxusercontent.com
-'https://dl.dropboxusercontent.com/scl/fi/a1zbppnhobvpedseotrv2/players.csv?rlkey=6156w2svj196b30iqztgq42jy&dl=0&raw=1';
-var rosters = 'https://www.dropbox.com/scl/fi/rwcxubttyzoyji13uys9a/PlayoffRoster.csv?rlkey=deygvsszbpa6kve3lqwyjcp9g&dl=0&raw=1';
-var op1 = {};
-var op2 = {};
+var player_list = 'https://dl.dropboxusercontent.com/scl/fi/a1zbppnhobvpedseotrv2/players.csv?rlkey=6156w2svj196b30iqztgq42jy&st=tez4di4h&dl=0&raw=1';
+var rosters = 'https://dl.dropboxusercontent.com/scl/fi/rwcxubttyzoyji13uys9a/PlayoffRoster.csv?rlkey=deygvsszbpa6kve3lqwyjcp9g&st=pv0keaq6&dl=0&raw=1';
+var res = [];
+var standings = [];
+var originalTable;
 
 function GetData(link, nCol)
 {
 	var op = {};
-	console.log(1);
 	$.get(link, function(data)
 	{
-        m = data;
+        var m = data;
 		m = m.replace(/\r/g, ",");
 		m = m.replace('\n', "");
 		m = m.split(',');
-		
+
 		for (var i = 0; i < nCol; i++)
 		{
 			op[m[i]] = [];
@@ -40,27 +39,249 @@ function GetData(link, nCol)
 		{
 			op[m[i%nCol]].push(m[i].trim());
 		}
+		
+		res.push(op);
+		
+		if (res.length === 1) GetData(rosters, 4);
+		else GetTeamTotals();
+		
 	});
-	return(op);
 }
 
-function GetData1(link, nCol, myCallback)
+function GetTeamTotals()
 {
-	op1 = GetData(link, nCol);
-	myCallback(rosters, 4);
+	
+	$('#loading').hide();
+	var op1 = res[0];
+	var op2 = res[1];
+	var team_names = [...new Set(op2.Team)];
+
+	for (i = 0; i < team_names.length; i++)
+	{
+		var this_team = team_names[i];
+		var team_roster = op2.Player.filter((_, index) => op2.Team[index] === this_team);
+		var wc = 0;
+		var d = 0;
+		var cc = 0;
+		var sb = 0;
+		var inactive = 0;
+
+		for (j = 0; j < team_roster.length; j++)
+		{
+			var this_player = team_roster[j];
+			wc += Number(op1.WC[op1.Player.indexOf(this_player)]);
+			d += Number(op1.D[op1.Player.indexOf(this_player)]);
+			cc += Number(op1.CC[op1.Player.indexOf(this_player)]);
+			sb += Number(op1.SB[op1.Player.indexOf(this_player)]);
+			inactive += Number(op1.Eliminated[op1.Player.indexOf(this_player)]);
+		}
+		
+		// populate standings
+		standings.push(
+        {
+            Team: this_team,
+            WC: wc, 
+            D: d,
+            CC: cc,
+            SB: sb,
+            Total: wc + d + cc + sb,
+            Active: team_roster.length - inactive
+        });
+	}
+	
+	// sort by total score
+	standings = standings.sort((a, b) => b.Total - a.Total);
+	
+	// show standings
+	$('#main_table').append('<table>');
+	
+	// headings
+	$('#main_table').append('<tr>');
+	var table_headings = Object.keys(standings[0]);
+	$('#main_table').append('<th>Rank</th>');
+	for (var i  = 0; i < table_headings.length; i++)
+	{
+		$('#main_table').append('<th>' +table_headings[i] +'</th>');
+	}
+	$('#main_table').append('</tr>');
+	
+	// standings
+	for (var i = 0; i < standings.length; i++)
+	{
+		$('#main_table').append('<tr>');
+		$('#main_table').append('<td>' + (i+1) + '</td>');
+		for (var j = 0; j < table_headings.length; j++)
+		{	
+			var this_val = standings[i][table_headings[j]];
+			if(table_headings[j] === 'Total')
+			{
+				$('#main_table').append('<td><b>' + this_val +'</b></td>');
+			}
+			else if (table_headings[j] === 'Team')
+			{
+				var toInsert = "'" + this_val + "'";
+				var this_link = '<span class="link" onclick="showTeam(' + toInsert + ');">' + this_val +'</span>';
+				$('#main_table').append('<td>' + this_link +'</a></td>');
+			}
+			else 
+			{
+				$('#main_table').append('<td>' + this_val +'</td>');
+			}
+		}
+		$('#main_table').append('</tr>');
+		$('#main_table').append('</table>');
+	}
 }
 
-function GetData2(link, nCol)//, myCallback)
+function showTeam(this_team)
 {
-	op2 = GetData(link, nCol);
-	return
-	//myCallback(rosters, 4);
+	var op1 = res[0];
+	var op2 = res[1];
+	var team_roster = op2.Player.filter((_, index) => op2.Team[index] === this_team);
+	var player_totals = [];
+	var wc = [];
+	var d = [];
+	var cc = [];
+	var sb = [];
+	var eliminated;
+	
+	// show team table
+	$('#team_table').replaceWith(originalTable.clone());
+	$('#team_table').append('<table>');
+	$('#team_table').append('<tr>');
+	$('#team_table').append('<th>Team: ' +  this_team + '</th>');
+	var this_link = '<span class="link" onclick="showMainTable();">Back to Standings</span>';
+	$('#team_table').append('<td>' + this_link +'</a></td>');
+	$('#team_table').append('</tr>');
+	// headings
+	$('#team_table').append('<tr>');
+	var table_headings = Object.keys(res[0]);
+	for (var i  = 0; i < table_headings.length; i++)
+	{
+		if (table_headings[i] !== 'Eliminated'){
+			$('#team_table').append('<th>' +table_headings[i] +'</th>');
+		}
+	}
+	$('#team_table').append('<th>' + 'Total' +'</th>');
+	$('#team_table').append('</tr>');
+	
+	
+	for (j = 0; j < team_roster.length; j++)
+	{
+		var this_player = team_roster[j];
+		
+		wc.push(Number(op1.WC[op1.Player.indexOf(this_player)]));
+		d.push(Number(op1.D[op1.Player.indexOf(this_player)]));
+		cc.push(Number(op1.CC[op1.Player.indexOf(this_player)]));
+		sb.push(Number(op1.SB[op1.Player.indexOf(this_player)]));
+		player_totals.push(wc[j] + d[j] + cc[j] + sb[j]);
+		eliminated = Number(op1.Eliminated[op1.Player.indexOf(this_player)]);
+		console.log(eliminated);
+		
+		if (eliminated === 1)  var xtra = ' bgcolor="#FFB2B2"';
+		else var xtra = ' bgcolor="#b3ffb3"';
+		
+		$('#team_table').append('<tr>');
+		
+		for (var i  = 0; i < table_headings.length; i++)
+		{
+			if (table_headings[i] !== 'Eliminated'){
+				$('#team_table').append('<td' + xtra + '>' + op1[table_headings[i]][op1.Player.indexOf(this_player)] +'</td>');
+			}
+		}
+		$('#team_table').append('<td' + xtra + '>' + player_totals[j] +'</td>');
+		$('#team_table').append('</tr>');
+	}
+	
+	$('#team_table').append('<tr>');
+	for (var i  = 0; i < table_headings.length - 1; i++)
+	{
+		if (table_headings[i] === 'WC')
+		{
+			$('#team_table').append('<th>' + wc.reduce((a, b) => a + b, 0) +'</th>');
+		}
+		else if (table_headings[i] === 'D')
+		{
+			$('#team_table').append('<th>' + d.reduce((a, b) => a + b, 0) +'</th>');
+		}
+		else if (table_headings[i] === 'CC')
+		{
+			$('#team_table').append('<th>' + cc.reduce((a, b) => a + b, 0) +'</th>');
+		}
+		else if (table_headings[i] === 'SB')
+		{
+			$('#team_table').append('<th>' + sb.reduce((a, b) => a + b, 0) +'</th>');
+		}
+		else if (table_headings[i] === 'Position')
+		{
+			$('#team_table').append('<td>' + this_link +'</a></td>');
+		}
+		else $('#team_table').append('<td> </td>');
+	}
+	$('#team_table').append('<th>' + player_totals.reduce((a, b) => a + b, 0) +'</th>');
+	$('#team_table').append('</tr>');
+	$('#team_table').append('</table>');
+	
+	$('#main_table').hide();
+	$('#team_table').show();
 }
 
+function showMainTable()
+{
+	$('#main_table').show();
+	$('#team_table').hide();
+}
 
 </script>
 
+<style>
+th {
+text-align:center;
+font-size: 18px;
+padding: 4px;
+border: 0px solid #000;
+ white-space: nowrap;
+  overflow: hidden;
+}
+
+td {
+text-align:center;
+font-size: 16px;
+padding: 4px;
+border: 0px solid #000;
+ white-space: nowrap;
+  overflow: hidden;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    border-spacing: 0;
+}
+
+#loading{
+	text-align: center;
+	font-weight: bold;
+	font-size: 36px;
+}
+
+.link {
+    color:blue;
+    text-decoration:underline;
+    cursor:pointer;
+}
+
+#team_table
+{
+	display: none;
+}
+
+</style>
+
 <body>
+<div id="main_table"></div>
+<div id="team_table"></div>
+<div id="loading">Loading...</div>
 </body>
 
 </html>
