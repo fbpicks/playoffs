@@ -242,12 +242,22 @@ function showTeam(this_team)
 	
 	$('#main_table').hide();
 	$('#team_table').show();
+	window.scrollTo({
+		top: 0,
+		left: 0,
+	behavior: 'auto' // Optional: 'smooth' for smooth scrolling
+	});
 }
 
 function showMainTable()
 {
 	$('#main_table').show();
 	$('#team_table').hide();
+	window.scrollTo({
+		top: 0,
+		left: 0,
+	behavior: 'auto' // Optional: 'smooth' for smooth scrolling
+	});
 }
 
 </script>
