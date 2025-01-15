@@ -181,7 +181,6 @@ function showTeam(this_team)
 	// headings
 	teamTableText += '<thead><tr>';
 	var table_headings = Object.keys(res[0][0]);
-	console.log(table_headings);
 	for (var i  = 0; i < table_headings.length; i++)
 	{
 		if (table_headings[i] !== 'Eliminated'){
@@ -202,7 +201,6 @@ function showTeam(this_team)
 		sb.push(Number(op1.filter(x => x.Player === this_player)[0].SB));
 		player_totals.push(wc[j] + d[j] + cc[j] + sb[j]);
 		eliminated = Number(op1.filter(x => x.Player === this_player)[0].Eliminated);
-		console.log(eliminated);
 		
 		if (eliminated === 1)  var xtra = ' bgcolor="#FFB2B2"';
 		else var xtra = ' bgcolor="#b3ffb3"';
