@@ -14,7 +14,7 @@ window.onload = function()
 	GetData(player_list, 8);
 }
 
-var player_list = 'https://script.google.com/macros/s/AKfycbz3n_Qt9dLG3_0hE5ZsNMfCzaXl0cRLr6DuJgUI7cBXNK7iISm0XvD7WYz-UqlF6_zUTQ/exec';
+var player_list = 'https://dl.dropboxusercontent.com/scl/fi/a1zbppnhobvpedseotrv2/players.csv?rlkey=6156w2svj196b30iqztgq42jy&st=tez4di4h&dl=0&raw=1';
 var rosters = 'https://dl.dropboxusercontent.com/scl/fi/rwcxubttyzoyji13uys9a/PlayoffRoster.csv?rlkey=deygvsszbpa6kve3lqwyjcp9g&st=pv0keaq6&dl=0&raw=1';
 var res = [];
 var standings = [];
@@ -26,30 +26,22 @@ function GetData(link, nCol)
 	var op = {};
 	$.get(link, function(data)
 	{
-		if (res.length === 1){
-			var m = data;
-			m = m.replace(/\r/g, ",");
-			m = m.replace('\n', "");
-			m = m.split(',');
+        var m = data;
+		m = m.replace(/\r/g, ",");
+		m = m.replace('\n', "");
+		m = m.split(',');
 
-			for (var i = 0; i < nCol; i++)
-			{
-				op[m[i]] = [];
-			}
-		
-			for (var i = nCol; i < m.length; i++)
-			{
-				op[m[i%nCol]].push(m[i].trim());
-			}
-			res.push(op);
-		}
-		else
+		for (var i = 0; i < nCol; i++)
 		{
-			res.push(data);
-			res[0] = res[0].data;
-			
-			
+			op[m[i]] = [];
 		}
+		
+		for (var i = nCol; i < m.length; i++)
+		{
+			op[m[i%nCol]].push(m[i].trim());
+		}
+		
+		res.push(op);
 		
 		if (res.length === 1) GetData(rosters, 4);
 		else GetTeamTotals();
@@ -81,11 +73,11 @@ function GetTeamTotals()
 		for (j = 0; j < team_roster.length; j++)
 		{
 			var this_player = team_roster[j];
-			wc += Number(op1.filter(x => x.Player === this_player)[0].WC);
-			d += Number(op1.filter(x => x.Player === this_player)[0].D);
-			cc += Number(op1.filter(x => x.Player === this_player)[0].CC);
-			sb += Number(op1.filter(x => x.Player === this_player)[0].SB);
-			inactive += Number(op1.filter(x => x.Player === this_player)[0].Eliminated);
+			wc += Number(op1.WC[op1.Player.indexOf(this_player)]);
+			d += Number(op1.D[op1.Player.indexOf(this_player)]);
+			cc += Number(op1.CC[op1.Player.indexOf(this_player)]);
+			sb += Number(op1.SB[op1.Player.indexOf(this_player)]);
+			inactive += Number(op1.Eliminated[op1.Player.indexOf(this_player)]);
 		}
 		
 		// populate standings
@@ -180,8 +172,7 @@ function showTeam(this_team)
 	teamTableText += '</tr>';
 	// headings
 	teamTableText += '<thead><tr>';
-	var table_headings = Object.keys(res[0][0]);
-	console.log(table_headings);
+	var table_headings = Object.keys(res[0]);
 	for (var i  = 0; i < table_headings.length; i++)
 	{
 		if (table_headings[i] !== 'Eliminated'){
@@ -196,12 +187,12 @@ function showTeam(this_team)
 	{
 		var this_player = team_roster[j];
 		
-		wc.push(Number(op1.filter(x => x.Player === this_player)[0].WC));
-		d.push(Number(op1.filter(x => x.Player === this_player)[0].D));
-		cc.push(Number(op1.filter(x => x.Player === this_player)[0].CC));
-		sb.push(Number(op1.filter(x => x.Player === this_player)[0].SB));
+		wc.push(Number(op1.WC[op1.Player.indexOf(this_player)]));
+		d.push(Number(op1.D[op1.Player.indexOf(this_player)]));
+		cc.push(Number(op1.CC[op1.Player.indexOf(this_player)]));
+		sb.push(Number(op1.SB[op1.Player.indexOf(this_player)]));
 		player_totals.push(wc[j] + d[j] + cc[j] + sb[j]);
-		eliminated = Number(op1.filter(x => x.Player === this_player)[0].Eliminated);
+		eliminated = Number(op1.Eliminated[op1.Player.indexOf(this_player)]);
 		console.log(eliminated);
 		
 		if (eliminated === 1)  var xtra = ' bgcolor="#FFB2B2"';
@@ -212,7 +203,7 @@ function showTeam(this_team)
 		for (var i  = 0; i < table_headings.length; i++)
 		{
 			if (table_headings[i] !== 'Eliminated'){
-				teamTableText += '<td' + xtra + '>' + op1[j][table_headings[i]] +'</td>';
+				teamTableText += '<td' + xtra + '>' + op1[table_headings[i]][op1.Player.indexOf(this_player)] +'</td>';
 			}
 		}
 		teamTableText += '<td' + xtra + '>' + player_totals[j] +'</td>';
@@ -251,12 +242,22 @@ function showTeam(this_team)
 	
 	$('#main_table').hide();
 	$('#team_table').show();
+	window.scrollTo({
+		top: 0,
+		left: 0,
+	behavior: 'auto' // Optional: 'smooth' for smooth scrolling
+	});
 }
 
 function showMainTable()
 {
 	$('#main_table').show();
 	$('#team_table').hide();
+	window.scrollTo({
+		top: 0,
+		left: 0,
+	behavior: 'auto' // Optional: 'smooth' for smooth scrolling
+	});
 }
 
 </script>
