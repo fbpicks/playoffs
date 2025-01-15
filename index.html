@@ -163,7 +163,6 @@ function showTeam(this_team)
 	var op1 = res[0];
 	var op2 = res[1];
 	var team_roster = op2.Player.filter((_, index) => op2.Team[index] === this_team);
-	console.log(team_roster);
 	var player_totals = [];
 	var wc = [];
 	var d = [];
@@ -250,12 +249,24 @@ function showTeam(this_team)
 	
 	$('#main_table').hide();
 	$('#team_table').show();
+	window.scrollTo({
+		top: 0,
+		left: 0,
+	behavior: 'auto' // Optional: 'smooth' for smooth scrolling
+	});
+	
 }
 
 function showMainTable()
 {
 	$('#main_table').show();
 	$('#team_table').hide();
+	$('#team_table').show();
+	window.scrollTo({
+		top: 0,
+		left: 0,
+	behavior: 'auto' // Optional: 'smooth' for smooth scrolling
+	});
 }
 
 </script>
