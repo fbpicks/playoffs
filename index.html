@@ -171,13 +171,13 @@ function showTeam(this_team)
 	var eliminated;
 	
 	// show team table
+	
 	$('#team_table').replaceWith(originalTable.clone());
-	teamTableText = '<table class="styled-table">';
-	teamTableText += '<tr>';
-	teamTableText += '<th>Team: ' +  this_team + '</th>';
 	var this_link = '<span class="link" onclick="showMainTable();">Back to Standings</span>';
-	teamTableText += '<td>' + this_link +'</a></td>';
-	teamTableText += '</tr>';
+	teamTableText =  this_link + '<br><br>';
+	teamTableText += '<b>Team: ' +  this_team + '</b>';
+	teamTableText += '<table class="styled-table">';
+	
 	// headings
 	teamTableText += '<thead><tr>';
 	var table_headings = Object.keys(res[0][0]);
@@ -236,15 +236,16 @@ function showTeam(this_team)
 		{
 			teamTableText += '<th>' + sb.reduce((a, b) => a + b, 0) +'</th>';
 		}
-		else if (table_headings[i] === 'Position')
+		/*else if (table_headings[i] === 'Position')
 		{
 			teamTableText += '<td>' + this_link +'</a></td>';
-		}
+		}*/
 		else teamTableText += '<td> </td>';
 	}
 	teamTableText += '<th>' + player_totals.reduce((a, b) => a + b, 0) +'</th>';
 	teamTableText += '</tr>';
 	teamTableText += '</tbody></table>';
+	teamTableText += this_link;
 	$('#team_table').append(teamTableText);
 	
 	$('#main_table').hide();
