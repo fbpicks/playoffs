@@ -163,6 +163,7 @@ function showTeam(this_team)
 	var op1 = res[0];
 	var op2 = res[1];
 	var team_roster = op2.Player.filter((_, index) => op2.Team[index] === this_team);
+	console.log(team_roster);
 	var player_totals = [];
 	var wc = [];
 	var d = [];
@@ -210,7 +211,7 @@ function showTeam(this_team)
 		for (var i  = 0; i < table_headings.length; i++)
 		{
 			if (table_headings[i] !== 'Eliminated'){
-				teamTableText += '<td' + xtra + '>' + op1[j][table_headings[i]] +'</td>';
+				teamTableText += '<td' + xtra + '>' + op1.filter(x => x.Player === this_player)[0][table_headings[i]] +'</td>';
 			}
 		}
 		teamTableText += '<td' + xtra + '>' + player_totals[j] +'</td>';
