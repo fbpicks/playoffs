@@ -71,7 +71,7 @@ function GetTeamTotals()
 	for (i = 0; i < team_names.length; i++)
 	{
 		var this_team = team_names[i];
-		var team_roster = op2.Player.filter((_, index) => op2.Team[index] === this_team);
+		var team_roster = op2.Player.filter((_, index) => op2.Team[index] === this_team & op2.Position[index] !== 'SB Winner');
 		var wc = 0;
 		var d = 0;
 		var cc = 0;
@@ -97,6 +97,7 @@ function GetTeamTotals()
             CC: cc,
             SB: sb,
             Total: wc + d + cc + sb,
+            SBW: op2.TM.filter((_, index) => op2.Team[index] === this_team & op2.Position[index] === 'SB Winner')[0],
             Active: team_roster.length - inactive
         });
 	}
@@ -162,7 +163,7 @@ function showTeam(this_team)
 {
 	var op1 = res[0];
 	var op2 = res[1];
-	var team_roster = op2.Player.filter((_, index) => op2.Team[index] === this_team);
+	var team_roster = op2.Player.filter((_, index) => op2.Team[index] === this_team & op2.Position[index] !== 'SB Winner');
 	var player_totals = [];
 	var wc = [];
 	var d = [];
