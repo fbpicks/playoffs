@@ -1,248 +1,336 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Fantasy Football Playoffs</title>
-  <link rel="shortcut icon" href="https://dl.dropboxusercontent.com/s/d8kuo01repoyfif/favicon.ico?raw=1" />
-  <meta charset="utf-8"/>
+	<title>Fantasy Football Playoffs</title>
+        <link rel="shortcut icon" href="https://dl.dropboxusercontent.com/s/d8kuo01repoyfif/favicon.ico?raw=1" />
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js"></script>
+		<meta charset="utf-8"/>
 </head>
 
-<body>
-<div id="main_table"></div>
-<div id="team_table" style="display:none"></div>
-<div id="loading" style="text-align:center;font-weight:bold;font-size:36px">Loading...</div>
-
 <script>
-/* ================= CONFIG ================= */
-
-const player_list = 'https://script.google.com/macros/s/AKfycbw_IEatKou94Fg0V2LYXxgZabsxGCAywoVZRnJSIGi3O4-tOxYW25W7Z3Iyy9pyh6HZWg/exec';
-const rosters = 'https://dl.dropboxusercontent.com/scl/fi/a1zbppnhobvpedseotrv2/PlayoffRoster.csv?rlkey=6156w2svj196b30iqztgq42';
-
-/* ================= GLOBALS ================= */
-
-let players = [];
-let roster = {};
-let playerMap = {};
-let teamMap = {};
-let originalTeamTable;
-
-/* ================= INIT ================= */
-
-window.onload = async () => {
-  originalTeamTable = document.getElementById('team_table').cloneNode(true);
-  await loadData();
-  buildLookups();
-  buildStandings();
-  document.getElementById('loading').style.display = 'none';
-};
-
-/* ================= DATA LOADING ================= */
-
-async function loadData() {
-  // Load Google Sheet with fetch
-  const playersPromise = fetch(player_list).then(r => r.json());
-
-  // Load Dropbox CSV with XHR (Dropbox blocks fetch)
-  const rosterPromise = loadCSVXHR(rosters);
-
-  const [playersRes, rosterText] = await Promise.all([
-    playersPromise,
-    rosterPromise
-  ]);
-
-  players = playersRes.data;
-  roster = parseFlatCSV(rosterText, 4);
+window.onload = function()
+{ 
+	originalTable = $('#team_table').clone();
+	GetData(player_list, 8);
 }
 
-/* ================= DROPBOX XHR LOADER ================= */
+var player_list = 'https://script.google.com/macros/s/AKfycbw_IEatKou94Fg0V2LYXxgZabsxGCAywoVZRnJSIGi3O4-tOxYW25W7Z3Iyy9pyh6HZWg/exec';
+var rosters = 'https://dl.dropboxusercontent.com/scl/fi/a1zbppnhobvpedseotrv2/PlayoffRoster.csv?rlkey=6156w2svj196b30iqztgq42jy';
+var res = [];
+var standings = [];
+var originalTable;
+var teamTableText;
 
-function loadCSVXHR(url) {
-  return new Promise((resolve, reject) => {
-    const xhr = new XMLHttpRequest();
-    xhr.open('GET', url, true);
-    xhr.onload = () => {
-      if (xhr.status === 200) resolve(xhr.responseText);
-      else reject(`CSV load failed: ${xhr.status}`);
-    };
-    xhr.onerror = () => reject('CSV request error');
-    xhr.send();
-  });
+function GetData(link, nCol)
+{
+	var op = {};
+	$.get(link, function(data)
+	{
+		if (res.length === 1){
+			var m = data;
+			m = m.replace(/\r/g, ",");
+			m = m.replace('\n', "");
+			m = m.split(',');
+
+			for (var i = 0; i < nCol; i++)
+			{
+				op[m[i]] = [];
+			}
+		
+			for (var i = nCol; i < m.length; i++)
+			{
+				op[m[i%nCol]].push(m[i].trim());
+			}
+			res.push(op);
+		}
+		else
+		{
+			res.push(data);
+			res[0] = res[0].data;
+			
+			
+		}
+		
+		if (res.length === 1) GetData(rosters, 4);
+		else GetTeamTotals();
+		
+	});
 }
 
-/* ================= CSV PARSER (UNCHANGED LOGIC) ================= */
+function GetTeamTotals()
+{
+	
+	$('#loading').hide();
+	var op1 = res[0];
+	var op2 = res[1];
+	var team_names = [...new Set(op2.Team)];
+	var rank = 1;
+	var tc = 1;
+	var this_rank = 1;
 
-function parseFlatCSV(text, nCol) {
-  const m = text
-    .replace(/\r/g, ',')
-    .replace(/\n/g, '')
-    .split(',');
+	for (i = 0; i < team_names.length; i++)
+	{
+		var this_team = team_names[i];
+		var team_roster = op2.Player.filter((_, index) => op2.Team[index] === this_team & op2.Position[index] !== 'SB Winner');
+		var wc = 0;
+		var d = 0;
+		var cc = 0;
+		var sb = 0;
+		var inactive = 0;
 
-  const obj = {};
-  for (let i = 0; i < nCol; i++) obj[m[i]] = [];
-
-  for (let i = nCol; i < m.length; i++) {
-    obj[m[i % nCol]].push(m[i].trim());
-  }
-
-  return obj;
+		for (j = 0; j < team_roster.length; j++)
+		{
+			var this_player = team_roster[j];
+			wc += Number(op1.filter(x => x.Player === this_player)[0].WC);
+			d += Number(op1.filter(x => x.Player === this_player)[0].D);
+			cc += Number(op1.filter(x => x.Player === this_player)[0].CC);
+			sb += Number(op1.filter(x => x.Player === this_player)[0].SB);
+			inactive += Number(op1.filter(x => x.Player === this_player)[0].Eliminated);
+		}
+		
+		// populate standings
+		standings.push(
+        {
+            Team: this_team,
+            WC: wc, 
+            D: d,
+            CC: cc,
+            SB: sb,
+            Total: wc + d + cc + sb,
+            SBW: op2.TM.filter((_, index) => op2.Team[index] === this_team & op2.Position[index] === 'SB Winner')[0],
+            Active: team_roster.length - inactive
+        });
+	}
+	
+	// sort by total score
+	standings = standings.sort((a, b) => b.Total - a.Total);
+	
+	// show standings
+	var tableText = '<table class="styled-table">';
+	
+	// headings
+	tableText += '<thead><tr>';
+	var table_headings = Object.keys(standings[0]);
+	tableText += '<th>Rank</th>';
+	for (var i  = 0; i < table_headings.length; i++)
+	{
+		tableText += '<th>' +table_headings[i] +'</th>';
+	}
+	tableText += '</tr></thead><tbody>';
+	
+	// standings
+	for (var i = 0; i < standings.length; i++)
+	{
+		tableText += '<tr>';
+		if (i !== 0)
+		{
+			if (standings[i].Total !== standings[i-1].Total)
+			{
+				this_rank += tc;
+				tc = 1; 
+			}
+			else
+			{
+				tc++;
+			}
+		}
+		tableText += '<td>' + this_rank + '</td>';
+		for (var j = 0; j < table_headings.length; j++)
+		{	
+			var this_val = standings[i][table_headings[j]];
+			if(table_headings[j] === 'Total')
+			{
+				tableText += '<td><b>' + this_val +'</b></td>';
+			}
+			else if (table_headings[j] === 'Team')
+			{
+				var toInsert = "'" + this_val + "'";
+				var this_link = '<span class="link" onclick="showTeam(' + toInsert + ');">' + this_val +'</span>';
+				tableText += '<td>' + this_link +'</a></td>';
+			}
+			else 
+			{
+				tableText += '<td>' + this_val +'</td>';
+			}
+		}
+		tableText += '</tr>';
+	}
+	tableText += '</tbody></table>';
+	$('#main_table').append(tableText);
 }
 
-/* ================= LOOKUPS ================= */
-
-function buildLookups() {
-  players.forEach(p => playerMap[p.Player] = p);
-
-  if (!roster.Team) {
-    console.error('Roster failed to load');
-    return;
-  }
-
-  roster.Team.forEach((team, i) => {
-    if (!teamMap[team]) teamMap[team] = [];
-    teamMap[team].push(i);
-  });
+function showTeam(this_team)
+{
+	var op1 = res[0];
+	var op2 = res[1];
+	var team_roster = op2.Player.filter((_, index) => op2.Team[index] === this_team & op2.Position[index] !== 'SB Winner');
+	var player_totals = [];
+	var wc = [];
+	var d = [];
+	var cc = [];
+	var sb = [];
+	var eliminated;
+	
+	// show team table
+	
+	$('#team_table').replaceWith(originalTable.clone());
+	var this_link = '<span class="link" onclick="showMainTable();">Back to Standings</span>';
+	teamTableText =  this_link + '<br><br>';
+	teamTableText += '<b>Team: ' +  this_team + '</b>';
+	teamTableText += '<table class="styled-table">';
+	
+	// headings
+	teamTableText += '<thead><tr>';
+	var table_headings = Object.keys(res[0][0]);
+	for (var i  = 0; i < table_headings.length; i++)
+	{
+		if (table_headings[i] !== 'Eliminated'){
+			teamTableText += '<th>' +table_headings[i] +'</th>';
+		}
+	}
+	teamTableText += '<th>' + 'Total' +'</th>';
+	teamTableText += '</thead></tr>';
+	
+	
+	for (j = 0; j < team_roster.length; j++)
+	{
+		var this_player = team_roster[j];
+		
+		wc.push(Number(op1.filter(x => x.Player === this_player)[0].WC));
+		d.push(Number(op1.filter(x => x.Player === this_player)[0].D));
+		cc.push(Number(op1.filter(x => x.Player === this_player)[0].CC));
+		sb.push(Number(op1.filter(x => x.Player === this_player)[0].SB));
+		player_totals.push(wc[j] + d[j] + cc[j] + sb[j]);
+		eliminated = Number(op1.filter(x => x.Player === this_player)[0].Eliminated);
+		
+		if (eliminated === 1)  var xtra = ' bgcolor="#FFB2B2"';
+		else var xtra = ' bgcolor="#b3ffb3"';
+		
+		teamTableText += '<tr>';
+		
+		for (var i  = 0; i < table_headings.length; i++)
+		{
+			if (table_headings[i] !== 'Eliminated'){
+				teamTableText += '<td' + xtra + '>' + op1.filter(x => x.Player === this_player)[0][table_headings[i]] +'</td>';
+			}
+		}
+		teamTableText += '<td' + xtra + '>' + player_totals[j] +'</td>';
+		teamTableText += '</tr>';
+	}
+	
+	teamTableText += '<tr>';
+	for (var i  = 0; i < table_headings.length - 1; i++)
+	{
+		if (table_headings[i] === 'WC')
+		{
+			teamTableText += '<th>' + wc.reduce((a, b) => a + b, 0) +'</th>';
+		}
+		else if (table_headings[i] === 'D')
+		{
+			teamTableText += '<th>' + d.reduce((a, b) => a + b, 0) +'</th>';
+		}
+		else if (table_headings[i] === 'CC')
+		{
+			teamTableText += '<th>' + cc.reduce((a, b) => a + b, 0) +'</th>';
+		}
+		else if (table_headings[i] === 'SB')
+		{
+			teamTableText += '<th>' + sb.reduce((a, b) => a + b, 0) +'</th>';
+		}
+		/*else if (table_headings[i] === 'Position')
+		{
+			teamTableText += '<td>' + this_link +'</a></td>';
+		}*/
+		else teamTableText += '<td> </td>';
+	}
+	teamTableText += '<th>' + player_totals.reduce((a, b) => a + b, 0) +'</th>';
+	teamTableText += '</tr>';
+	teamTableText += '</tbody></table>';
+	teamTableText += this_link;
+	$('#team_table').append(teamTableText);
+	
+	$('#main_table').hide();
+	$('#team_table').show();
+	window.scrollTo({
+		top: 0,
+		left: 0,
+	behavior: 'auto' // Optional: 'smooth' for smooth scrolling
+	});
+	
 }
 
-/* ================= STANDINGS ================= */
-
-function buildStandings() {
-  const standings = [];
-
-  for (const team in teamMap) {
-    let wc = 0, d = 0, cc = 0, sb = 0, inactive = 0, sbw = '';
-
-    teamMap[team].forEach(i => {
-      if (roster.Position[i] === 'SB Winner') {
-        sbw = roster.TM[i];
-        return;
-      }
-
-      const p = playerMap[roster.Player[i]];
-      wc += +p.WC;
-      d += +p.D;
-      cc += +p.CC;
-      sb += +p.SB;
-      inactive += +p.Eliminated;
-    });
-
-    standings.push({
-      Team: team,
-      WC: wc,
-      D: d,
-      CC: cc,
-      SB: sb,
-      Total: wc + d + cc + sb,
-      SBW: sbw,
-      Active: teamMap[team].length - inactive
-    });
-  }
-
-  standings.sort((a, b) => b.Total - a.Total);
-  renderMainTable(standings);
+function showMainTable()
+{
+	$('#main_table').show();
+	$('#team_table').hide();
+	window.scrollTo({
+		top: 0,
+		left: 0,
+	behavior: 'auto' // Optional: 'smooth' for smooth scrolling
+	});
 }
 
-/* ================= MAIN TABLE ================= */
-
-function renderMainTable(standings) {
-  let html = '<table class="styled-table"><thead><tr>';
-  const headers = Object.keys(standings[0]);
-
-  html += '<th>Rank</th>';
-  headers.forEach(h => html += `<th>${h}</th>`);
-  html += '</tr></thead><tbody>';
-
-  let rank = 1, tie = 1;
-
-  standings.forEach((row, i) => {
-    if (i > 0 && row.Total !== standings[i - 1].Total) {
-      rank += tie;
-      tie = 1;
-    } else if (i > 0) tie++;
-
-    html += `<tr><td>${rank}</td>`;
-    headers.forEach(h => {
-      if (h === 'Team') {
-        html += `<td><span class="link" onclick="showTeam('${row[h]}')">${row[h]}</span></td>`;
-      } else if (h === 'Total') {
-        html += `<td><b>${row[h]}</b></td>`;
-      } else {
-        html += `<td>${row[h]}</td>`;
-      }
-    });
-    html += '</tr>';
-  });
-
-  html += '</tbody></table>';
-  document.getElementById('main_table').innerHTML = html;
-}
-
-/* ================= TEAM VIEW ================= */
-
-function showTeam(team) {
-  const table = document.getElementById('team_table');
-  table.replaceWith(originalTeamTable.cloneNode(true));
-
-  let html = `<span class="link" onclick="showMainTable()">Back to Standings</span><br><br>`;
-  html += `<b>Team: ${team}</b>`;
-  html += `<table class="styled-table"><thead><tr>`;
-
-  const headers = Object.keys(players[0]).filter(h => h !== 'Eliminated');
-  headers.forEach(h => html += `<th>${h}</th>`);
-  html += '<th>Total</th></tr></thead><tbody>';
-
-  teamMap[team].forEach(i => {
-    if (roster.Position[i] === 'SB Winner') return;
-
-    const p = playerMap[roster.Player[i]];
-    const total = +p.WC + +p.D + +p.CC + +p.SB;
-    const color = p.Eliminated == 1 ? '#FFB2B2' : '#b3ffb3';
-
-    html += '<tr>';
-    headers.forEach(h => html += `<td bgcolor="${color}">${p[h]}</td>`);
-    html += `<td bgcolor="${color}">${total}</td></tr>`;
-  });
-
-  html += '</tbody></table>';
-  table.innerHTML = html;
-
-  document.getElementById('main_table').style.display = 'none';
-  table.style.display = 'block';
-  window.scrollTo(0, 0);
-}
-
-/* ================= NAV ================= */
-
-function showMainTable() {
-  document.getElementById('main_table').style.display = 'block';
-  document.getElementById('team_table').style.display = 'none';
-}
 </script>
 
 <style>
 .styled-table {
-  border-collapse: collapse;
-  margin: 20px 0;
-  font-size: 0.9em;
-  font-family: sans-serif;
-  min-width: 400px;
-  box-shadow: 0 0 20px rgba(0,0,0,0.15);
+    border-collapse: collapse;
+    margin: 20px 0;
+    font-size: 0.9em;
+    font-family: sans-serif;
+    min-width: 400px;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.15);
 }
+
 .styled-table thead tr {
-  background-color: #00338D;
-  color: #fff;
+    background-color: #00338D;
+    color: #ffffff;
+    text-align: center;
 }
+
 .styled-table th,
 .styled-table td {
-  padding: 12px 15px;
-  text-align: center;
+    padding: 12px 15px;
+    text-align: center;
 }
+
+
+.styled-table tbody tr {
+    border-bottom: 1px solid #dddddd;
+}
+
 .styled-table tbody tr:nth-of-type(even) {
-  background-color: #f3f3f3;
+    background-color: #f3f3f3;
 }
+
+.styled-table tbody tr:last-of-type {
+    border-bottom: 2px solid #00338D;
+}
+
+
+#loading{
+	text-align: center;
+	font-weight: bold;
+	font-size: 36px;
+}
+
 .link {
-  color: blue;
-  text-decoration: underline;
-  cursor: pointer;
+    color:blue;
+    text-decoration:underline;
+    cursor:pointer;
 }
+
+#team_table
+{
+	display: none;
+}
+
 </style>
+
+<body>
+<div id="main_table"></div>
+<div id="team_table"></div>
+<div id="loading">Loading...</div>
 </body>
+
 </html>
