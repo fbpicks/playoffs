@@ -38,13 +38,34 @@ window.onload = async () => {
 /* ================= DATA LOADING ================= */
 
 async function loadData() {
-  const [playersRes, rosterRes] = await Promise.all([
-    fetch(player_list).then(r => r.json()),
-    fetch(rosters).then(r => r.text())
+  // Load Google Sheet with fetch
+  const playersPromise = fetch(player_list).then(r => r.json());
+
+  // Load Dropbox CSV with XHR (Dropbox blocks fetch)
+  const rosterPromise = loadCSVXHR(rosters);
+
+  const [playersRes, rosterText] = await Promise.all([
+    playersPromise,
+    rosterPromise
   ]);
 
   players = playersRes.data;
-  roster = parseFlatCSV(rosterRes, 4); // same logic as your original code
+  roster = parseFlatCSV(rosterText, 4);
+}
+
+/* ================= DROPBOX XHR LOADER ================= */
+
+function loadCSVXHR(url) {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open('GET', url, true);
+    xhr.onload = () => {
+      if (xhr.status === 200) resolve(xhr.responseText);
+      else reject(`CSV load failed: ${xhr.status}`);
+    };
+    xhr.onerror = () => reject('CSV request error');
+    xhr.send();
+  });
 }
 
 /* ================= CSV PARSER (UNCHANGED LOGIC) ================= */
@@ -69,6 +90,11 @@ function parseFlatCSV(text, nCol) {
 
 function buildLookups() {
   players.forEach(p => playerMap[p.Player] = p);
+
+  if (!roster.Team) {
+    console.error('Roster failed to load');
+    return;
+  }
 
   roster.Team.forEach((team, i) => {
     if (!teamMap[team]) teamMap[team] = [];
