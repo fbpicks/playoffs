@@ -97,7 +97,6 @@ function GetTeamTotals()
             CC: cc,
             SB: sb,
             Total: wc + d + cc + sb,
-            SBW: op2.TM.filter((_, index) => op2.Team[index] === this_team & op2.Position[index] === 'SB Winner')[0],
             Active: team_roster.length - inactive
         });
 	}
