@@ -83,6 +83,7 @@ function GetTeamTotals()
 		{
 			var this_player = team_roster[j];
 			console.log(this_player);
+			console.log(op1);
 			wc += Number(op1.filter(x => x.Player === this_player)[0].WC);
 			d += Number(op1.filter(x => x.Player === this_player)[0].D);
 			cc += Number(op1.filter(x => x.Player === this_player)[0].CC);
