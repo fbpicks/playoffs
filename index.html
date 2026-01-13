@@ -28,8 +28,9 @@ function GetData(link, nCol)
 	{
 		if (res.length === 1){
 			var m = data;
-			m = m.replace(/\r/g, ",");
-			m = m.replace('\n', "");
+			//m = m.replace(/\r/g, ",");
+			//m = m.replace('\n', "");
+			m = m.replace(/\n/g, ",");
 			m = m.split(',');
 
 			for (var i = 0; i < nCol; i++)
